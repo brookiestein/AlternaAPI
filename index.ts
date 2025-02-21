@@ -1,5 +1,6 @@
 const createError = require('http-errors');
 const path = require('path');
+const bodyParser = require('body-parser');
 const express = require('express');
 const app = express();
 const port: number = 8000;
@@ -11,6 +12,9 @@ let users = [
     {"id": 4, "name": "Eugenio", "active": true},
     {"id": 5, "name": "Rafael", "active": true}
 ];
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
 
 app.param('lookForId', (req, res, next, id) => {
     req.id = id;
@@ -38,23 +42,7 @@ app.param('lookForUser', (req, res, next, username) => {
     }
 });
 
-app.param('addUser', (req, res, next, username) => {
-    for (let user of users) {
-        if (user.name === username) {
-            next(createError(400, `User: ${username} already exists.`));
-        }
-    }
-
-    req.id = users.length + 1;
-    req.user = username;
-    if (req.user) {
-        next();
-    } else {
-        next(createError(500, `User: ${username} could not be created.`));
-    }
-});
-
-app.param('removeUser', (req, res, next, username) => {
+app.param('deleteUser', (req, res, next, username) => {
     let exists: boolean = false;
     for (let i = 0; i < users.length; ++i) {
         if (username === users[i].name) {
@@ -150,15 +138,19 @@ app.get('/user/:lookForUser/raw', (req, res) => {
     res.send(`${req.id}`);
 });
 
-app.get('/add/:addUser', (req, res) => {
-    const addedBy: string = req.header('X-Real-IP');
-    users.push({"id": req.id, "name": req.user, "active": true});
-    res.send(`User ID: ${req.id}, Username: ${req.user}`);
+app.post('/add', (req, res) => {
+    if (req.body.username) {
+        const newUser = {"id": users.length + 1, "name": req.body.username, "active": true};
+        users.push(newUser);
+        res.json({id: newUser.id, username: newUser.name});
+    } else {
+        res.json({error: "Username wasn't specified."});
+    }
 });
 
-app.get('/remove/:removeUser', (req, res) => {
+app.delete('/delete/:deleteUser', (req, res) => {
     users[req.id].active = false;
-    res.send(`User: ${req.user} sucessfully removed!`);
+    res.json({ message: `User: ${req.user} sucessfully removed!`});
 });
 
 app.get('/updateById/:updateId/:newUsername', (req, res) => {
