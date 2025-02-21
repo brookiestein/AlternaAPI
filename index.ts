@@ -1,4 +1,5 @@
 const createError = require('http-errors');
+const path = require('path');
 const express = require('express');
 const app = express();
 const port: number = 8000;
@@ -105,79 +106,8 @@ app.param('newUsername', (req, res, next, username) => {
 });
 
 app.get('/', (req, res) => {
-    const html = `
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" contents="width=device-width initial-scale=1.0">
-        <title>Brayan's API</title>
-        <style>
-            table, tr {
-                border: 1px solid;
-            }
-            tr:nth-of-type(even) {
-                background-color: #ccc;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Welcome to Brayan's API!</h1>
-        <p>These are the available endpoints:</p>
-        <table>
-            <tr>
-                <th>Endpoint</th>
-                <th>Description</th>
-            </tr>
-
-            <tr>
-                <td>/list</td>
-                <td>Get an html formatted list of all users.</td>
-            </tr>
-
-            <tr>
-                <td>/list/raw</td>
-                <td>Get a Json-formatted list of all users.</td>
-            </tr>
-
-            <tr>
-                <td>/id/userid</td>
-                <td>Returns the username whose ID is userid.</td>
-            </tr>
-
-            <tr>
-                <td>/id/userid/raw</td>
-                <td>Returns the username whose ID is userid.</td>
-            </tr>
-
-            <tr>
-                <td>/user/username</td>
-                <td>Returns the ID associated with username.</td>
-            </tr>
-
-            <tr>
-                <td>/addUser/&ltusername&gt</td>
-                <td>Adds username to the list of users.</td>
-            </tr>
-
-            <tr>
-                <td>/remove/username</td>
-                <td>Removes username if exists.</td>
-            </tr>
-
-            <tr>
-                <td>/updateById/userid/newUsername</td>
-                <td>Update the username of that whose ID is userid.</td>
-            </tr>
-
-            <tr>
-                <td>/updateByName/username/newUsername</td>
-                <td>Update the username of that whose username is username.</td>
-            </tr>
-        </table>
-    </body>
-</html>`;
-    res.send(html);
+    const options = {root: path.join(__dirname)};
+    res.sendFile('index.html', options);
 });
 
 app.get('/id/:lookForId', (req, res) => {
