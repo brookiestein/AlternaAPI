@@ -17,9 +17,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.param('lookForId', (req, res, next, id) => {
-    req.id = id;
-    req.user = users[id];
-    if (req.user && users[id].active === true) {
+    req.id = parseInt(id);
+    if (isNaN(req.id)) {
+        next(createError(500, `ID: ${id} is not valid.`));
+    }
+
+    req.user = users[req.id - 1];
+    if (req.user && users[req.id - 1].active === true) {
         next();
     } else {
         next(createError(404, `User with id: ${id} not found!`));
@@ -29,7 +33,7 @@ app.param('lookForId', (req, res, next, id) => {
 app.param('lookForUser', (req, res, next, username) => {
     for (let i = 0; i < users.length; ++i) {
         if (username == users[i].name && users[i].active === true) {
-            req.id = i + 1;
+            req.id = i;
             req.user = username;
             break;
         }
@@ -62,11 +66,11 @@ app.param('deleteUser', (req, res, next, username) => {
 
 app.param('updateId', (req, res, next, id) => {
     const index = parseInt(id);
-    if (isNaN(index) || index < 0 || index >= (users.length)) {
+    if (isNaN(index) || index < 1 || index > (users.length)) {
         next(createError(404, `ID: ${id} is invalid.`));
     }
 
-    req.id = index;
+    req.id = index - 1;
     next();
 });
 
@@ -139,13 +143,21 @@ app.get('/user/:lookForUser/raw', (req, res) => {
 });
 
 app.post('/add', (req, res) => {
-    if (req.body.username) {
-        const newUser = {"id": users.length + 1, "name": req.body.username, "active": true};
-        users.push(newUser);
-        res.json({id: newUser.id, username: newUser.name});
-    } else {
+    if (!req.body.username) {
         res.json({error: "Username wasn't specified."});
+        return;
     }
+
+    for (const user of users) {
+        if (req.body.username === user.name) {
+            res.json({error: `User: ${user.name} already exists.`});
+            return;
+        }
+    }
+
+    const newUser = {"id": users.length + 1, "name": req.body.username, "active": true};
+    users.push(newUser);
+    res.json({id: newUser.id, username: newUser.name});
 });
 
 app.delete('/delete/:deleteUser', (req, res) => {
@@ -153,16 +165,16 @@ app.delete('/delete/:deleteUser', (req, res) => {
     res.json({ message: `User: ${req.user} sucessfully removed!`});
 });
 
-app.get('/updateById/:updateId/:newUsername', (req, res) => {
+app.put('/updateById/:updateId/:newUsername', (req, res) => {
     const oldUser: string = users[req.id].name;
     users[req.id].name = req.user;
-    res.send(`Old username: ${oldUser}, new username: ${req.user}`);
+    res.json({oldUsername: oldUser, newUsername: req.user});
 });
 
-app.get('/updateByName/:updateName/:newUsername', (req, res) => {
+app.put('/updateByName/:updateName/:newUsername', (req, res) => {
     const oldUser: string = users[req.id].name;
     users[req.id].name = req.user;
-    res.send(`Old username: ${oldUser}, new username: ${req.user}`);
+    res.json({oldUsername: oldUser, newUsername: req.user});
 });
 
 app.get('/list', (req, res) => {
@@ -215,4 +227,4 @@ app.get('/list/raw', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Listening on port ${port}.`);
-})
+});
